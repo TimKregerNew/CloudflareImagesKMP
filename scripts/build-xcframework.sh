@@ -44,8 +44,10 @@ fi
 
 # Zip the XCFramework
 echo "🗜️  Zipping XCFramework..."
+mkdir -p "${OUTPUT_DIR}"
+ABS_ZIP_FILE="$(cd "$(dirname "${ZIP_FILE}")" && pwd)/$(basename "${ZIP_FILE}")"
 cd "${XCFRAMEWORK_DIR}"
-zip -r -q "../../../${ZIP_FILE}" "${FRAMEWORK_NAME}.xcframework"
+zip -r -q "${ABS_ZIP_FILE}" "${FRAMEWORK_NAME}.xcframework"
 cd - > /dev/null
 
 # Calculate checksum
@@ -60,14 +62,24 @@ echo "📏 Size: $(du -h "${ZIP_FILE}" | cut -f1)"
 echo "🔐 Checksum: ${CHECKSUM}"
 echo ""
 echo "📝 Next steps:"
-echo "1. Upload ${ZIP_FILE} to GitHub Releases with tag ${VERSION}"
-echo "2. Create or update Package.swift in your repository with:"
-echo "   - url: https://github.com/yourusername/kmp-networking/releases/download/${VERSION}/${FRAMEWORK_NAME}.xcframework.zip"
-echo "   - checksum: \"${CHECKSUM}\""
+echo "1. Upload ${ZIP_FILE} to GitHub Releases with tag v${VERSION}"
+echo "   - Go to: https://github.com/TimKregerNew/CloudflareImagesKMP/releases/new"
+echo "   - Tag: v${VERSION}"
+echo "   - Title: Version ${VERSION}"
+echo "   - Upload: ${ZIP_FILE}"
 echo ""
-echo "3. Push the Package.swift update and tag:"
-echo "   git tag ${VERSION}"
-echo "   git push origin ${VERSION}"
+echo "2. Update Package.swift with the checksum:"
+echo "   - Replace REPLACE_WITH_ACTUAL_CHECKSUM with: ${CHECKSUM}"
+echo "   - Update version in URL if needed: ${VERSION}"
+echo ""
+echo "3. Commit and push Package.swift update:"
+echo "   git add Package.swift"
+echo "   git commit -m \"Update Package.swift for version ${VERSION}\""
+echo "   git push origin main"
+echo ""
+echo "4. Create and push the release tag:"
+echo "   git tag v${VERSION}"
+echo "   git push origin v${VERSION}"
 echo ""
 
 

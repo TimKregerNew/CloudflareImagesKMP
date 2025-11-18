@@ -106,15 +106,29 @@ tasks.register("createXCFramework") {
         // Remove old XCFramework if exists
         delete(xcframeworkPath)
         
+        // Build command with frameworks
+        val frameworks = mutableListOf<String>()
+        frameworks.add("-framework")
+        frameworks.add("$buildDir/bin/iosArm64/releaseFramework/cloudflareImagesKMP.framework")
+        
+        // Add simulator frameworks - only include what's available
+        val simulatorArm64 = file("$buildDir/bin/iosSimulatorArm64/releaseFramework/cloudflareImagesKMP.framework")
+        val simulatorX64 = file("$buildDir/bin/iosX64/releaseFramework/cloudflareImagesKMP.framework")
+        
+        // Prefer arm64 simulator (Apple Silicon), but include x64 if arm64 doesn't exist
+        if (simulatorArm64.exists()) {
+            frameworks.add("-framework")
+            frameworks.add(simulatorArm64.absolutePath)
+        } else if (simulatorX64.exists()) {
+            frameworks.add("-framework")
+            frameworks.add(simulatorX64.absolutePath)
+        }
+        
+        frameworks.add("-output")
+        frameworks.add(xcframeworkPath)
+        
         exec {
-            commandLine(
-                "xcodebuild",
-                "-create-xcframework",
-                "-framework", "$buildDir/bin/iosArm64/releaseFramework/cloudflareImagesKMP.framework",
-                "-framework", "$buildDir/bin/iosSimulatorArm64/releaseFramework/cloudflareImagesKMP.framework",
-                "-framework", "$buildDir/bin/iosX64/releaseFramework/cloudflareImagesKMP.framework",
-                "-output", xcframeworkPath
-            )
+            commandLine("xcodebuild", "-create-xcframework", *frameworks.toTypedArray())
         }
         
         println("✅ XCFramework created at: $xcframeworkPath")
