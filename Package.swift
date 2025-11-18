@@ -17,7 +17,7 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "cloudflareImagesKMP",
-            url: "https://github.com/TimKregerNew/CloudflareImagesKMP/releases/download/1.0.0/cloudflareImagesKMP.xcframework.zip",
+            url: "https://github.com/TimKregerNew/CloudflareImagesKMP/releases/download/v1.0.0/cloudflareImagesKMP.xcframework.zip",
             checksum: "c8c63acb3084815b1beb717013b59ba05a75521f3df74f41139b589f2cfa6084"
         )
     ]
