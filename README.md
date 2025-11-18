@@ -410,16 +410,28 @@ dependencies {
 Build and distribute the XCFramework:
 
 ```bash
-# Build XCFramework
+# Build XCFramework (this will output the checksum)
 ./scripts/build-xcframework.sh 1.0.0
 
-# Upload to GitHub releases (the script will show the checksum)
-gh release create v1.0.0 build/spm/shared.xcframework.zip
-
-# Update Package.swift with the checksum
+# The script will output:
+# - Location of the zip file
+# - Checksum for Package.swift
+# - Next steps for uploading to GitHub Releases
 ```
 
-Then add to your iOS project via Xcode or Package.swift.
+After uploading to GitHub Releases, update `Package.swift` with the checksum:
+
+```bash
+# Option 1: Use the helper script
+./scripts/update-package-swift.sh 1.0.0 <checksum>
+
+# Option 2: Manually update Package.swift
+# Replace REPLACE_WITH_ACTUAL_CHECKSUM with the checksum from build script
+```
+
+Then add to your iOS project:
+- **In Xcode**: File → Add Package Dependencies → Enter repository URL
+- **In Package.swift**: Add as a dependency to your target
 
 **📖 See [DISTRIBUTION.md](documentation/DISTRIBUTION.md) for detailed distribution instructions.**
 
