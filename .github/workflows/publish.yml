@@ -1,0 +1,144 @@
+name: Publish Library
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish'
+        required: true
+        type: string
+
+jobs:
+  publish-android:
+    name: Publish Android to JFrog
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+      
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Publish to Artifactory
+        env:
+          ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
+          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+        run: |
+          ./gradlew :shared:publish -Plibrary.version=${{ steps.version.outputs.version }}
+      
+      - name: Summary
+        run: |
+          echo "### ✅ Android Library Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Artifact:** com.kmpnetworking:shared:${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+  
+  publish-ios:
+    name: Publish iOS Swift Package
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+      
+      - name: Extract version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Build XCFramework
+        run: |
+          chmod +x scripts/build-xcframework.sh
+          ./scripts/build-xcframework.sh ${{ steps.version.outputs.version }}
+      
+      - name: Calculate checksum
+        id: checksum
+        run: |
+          CHECKSUM=$(swift package compute-checksum build/spm/shared.xcframework.zip)
+          echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
+          echo "Checksum: $CHECKSUM"
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: github.event_name != 'workflow_dispatch'
+        with:
+          files: build/spm/shared.xcframework.zip
+          body: |
+            ## Release ${{ steps.version.outputs.version }}
+            
+            ### Swift Package Manager
+            
+            Update your `Package.swift`:
+            
+            ```swift
+            .binaryTarget(
+                name: "shared",
+                url: "https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/shared.xcframework.zip",
+                checksum: "${{ steps.checksum.outputs.checksum }}"
+            )
+            ```
+            
+            ### Android (JFrog Artifactory)
+            
+            ```kotlin
+            dependencies {
+                implementation("com.kmpnetworking:shared:${{ steps.version.outputs.version }}")
+            }
+            ```
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Upload artifact (for manual workflow)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-xcframework
+          path: build/spm/shared.xcframework.zip
+      
+      - name: Summary
+        run: |
+          echo "### ✅ iOS XCFramework Built" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Checksum:** \`${{ steps.checksum.outputs.checksum }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Update Package.swift with:" >> $GITHUB_STEP_SUMMARY
+          echo '```swift' >> $GITHUB_STEP_SUMMARY
+          echo 'url: "https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/shared.xcframework.zip",' >> $GITHUB_STEP_SUMMARY
+          echo 'checksum: "${{ steps.checksum.outputs.checksum }}"' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+
