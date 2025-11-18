@@ -10,8 +10,6 @@ A cross-platform networking library for Android and iOS using Kotlin Multiplatfo
 - ✅ Type-safe result handling with `NetworkResult` sealed class
 - 🔧 Configurable timeouts and logging
 - 📱 Sample Android and iOS apps included
-- 🚀 Ready for distribution via JFrog Artifactory (Android) and Swift Package Manager (iOS)
-- ☁️ **NEW:** Cloudflare Images integration with upload, management, and all business logic in shared code
 
 ## Project Structure
 

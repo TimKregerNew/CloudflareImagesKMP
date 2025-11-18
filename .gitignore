@@ -48,6 +48,7 @@ local.properties
 
 # Kotlin
 *.kotlin_module
+.build/
 
 # Distribution
 build/spm/
